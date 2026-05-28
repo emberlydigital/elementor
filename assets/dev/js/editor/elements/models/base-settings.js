@@ -74,6 +74,15 @@ BaseSettingsModel = Backbone.Model.extend( {
 		self.handleRepeaterData( attrs );
 
 		self.set( attrs );
+
+		if ( elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls ) {
+			self.__activeControlsCacheVersion = 0;
+			self.__activeControlsCache = null;
+			self.on( 'change', () => {
+				self.__activeControlsCacheVersion++;
+				self.__activeControlsCache = null;
+			} );
+		}
 	},
 
 	convertRepeaterValueToCollection( attrs, repeaterControl ) {
@@ -210,6 +219,14 @@ BaseSettingsModel = Backbone.Model.extend( {
 	},
 
 	getActiveControls( controls, attributes ) {
+		const useCache = elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls &&
+			undefined === controls &&
+			undefined === attributes;
+
+		if ( useCache && this.__activeControlsCache && this.__activeControlsCache.version === this.__activeControlsCacheVersion ) {
+			return this.__activeControlsCache.result;
+		}
+
 		const activeControls = {};
 
 		if ( ! controls ) {
@@ -227,6 +244,13 @@ BaseSettingsModel = Backbone.Model.extend( {
 				activeControls[ controlKey ] = control;
 			}
 		} );
+
+		if ( useCache ) {
+			this.__activeControlsCache = {
+				version: this.__activeControlsCacheVersion,
+				result: activeControls,
+			};
+		}
 
 		return activeControls;
 	},
