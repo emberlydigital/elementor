@@ -747,13 +747,7 @@ abstract class Document extends Controls_Stack {
 
 			$config['elements'] = $this->get_elements_raw_data( null, true );
 			// `get_elements_raw_data` has to be called before `get_widget_types_config`, because it affects it.
-			$widget_types_config = Plugin::$instance->widgets_manager->get_widget_types_config();
-
-			if ( Plugin::$instance->experiments->is_feature_active( 'e_lazy_widget_schemas' ) ) {
-				$widget_types_config = $this->strip_unused_widget_controls( $widget_types_config, $config['elements'] );
-			}
-
-			$config['widgets'] = array_merge( $elements_config, $widget_types_config );
+			$config['widgets'] = array_merge( $elements_config, Plugin::$instance->widgets_manager->get_widget_types_config() );
 		}
 
 		$additional_config = [];
@@ -777,54 +771,6 @@ abstract class Document extends Controls_Stack {
 		}
 
 		return $config;
-	}
-
-	/**
-	 * Strip control schemas for widget types that aren't used on the current document.
-	 *
-	 * Sends an empty `controls` map plus a `lazy: true` marker for unused types so the
-	 * panel category list and metadata still render, but the heavy control payload only
-	 * arrives via the existing `get_widgets_config` AJAX call. Gated by experiment
-	 * `e_lazy_widget_schemas`.
-	 *
-	 * @param array $widget_types_config Full widget config keyed by widget type.
-	 * @param array $elements            The document's element tree (already raw).
-	 * @return array
-	 */
-	private function strip_unused_widget_controls( array $widget_types_config, array $elements ): array {
-		$used = [];
-
-		$collect = function ( array $items ) use ( &$collect, &$used ) {
-			foreach ( $items as $item ) {
-				if ( ! empty( $item['widgetType'] ) ) {
-					$used[ $item['widgetType'] ] = true;
-				}
-				if ( ! empty( $item['elements'] ) && is_array( $item['elements'] ) ) {
-					$collect( $item['elements'] );
-				}
-			}
-		};
-		$collect( $elements );
-
-		// Always-keep types: `common` / `common-optimized` are merged into every other
-		// widget's controls at runtime; container/section/column are elType configs
-		// and use is_array() check.
-		$always_keep = [ 'common' => true, 'common-optimized' => true ];
-
-		foreach ( $widget_types_config as $key => $widget_config ) {
-			if ( ! is_array( $widget_config ) ) {
-				continue;
-			}
-			if ( isset( $used[ $key ] ) || isset( $always_keep[ $key ] ) ) {
-				continue;
-			}
-			$widget_config['controls'] = (object) [];
-			$widget_config['tabs_controls'] = (object) [];
-			$widget_config['lazy'] = true;
-			$widget_types_config[ $key ] = $widget_config;
-		}
-
-		return $widget_types_config;
 	}
 
 	/**

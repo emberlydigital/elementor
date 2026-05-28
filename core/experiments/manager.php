@@ -388,15 +388,6 @@ class Manager extends Base_Object {
 			'release_status' => self::RELEASE_STATUS_BETA,
 			'default' => self::STATE_INACTIVE,
 		] );
-
-		$this->add_feature( [
-			'name' => 'e_lazy_widget_schemas',
-			'title' => esc_html__( 'Lazy Widget Schemas', 'elementor' ),
-			'tag' => esc_html__( 'Performance', 'elementor' ),
-			'description' => esc_html__( 'Send full control schemas only for widget types present on the current document; defer the rest until the widget panel is ready. May break third-party add-ons that depend on every registered widget having its controls available at editor boot.', 'elementor' ),
-			'release_status' => self::RELEASE_STATUS_BETA,
-			'default' => self::STATE_INACTIVE,
-		] );
 	}
 
 	/**
