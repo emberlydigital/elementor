@@ -293,6 +293,13 @@ export default class EditorBase extends Marionette.Application {
 				return false;
 			}
 
+			// Lazy schemas (e_lazy_widget_schemas): the metadata stub is here but the
+			// controls payload hasn't arrived yet — treat as "not ready" so callers
+			// don't try to render a control panel from an empty schema.
+			if ( this.widgetsCache[ widgetType ].lazy ) {
+				return false;
+			}
+
 			if ( ! this.widgetsCache[ widgetType ].commonMerged && ! this.widgetsCache[ widgetType ].atomic_controls ) {
 				let commonControls = this.widgetsCache.common.controls;
 
@@ -1140,7 +1147,9 @@ export default class EditorBase extends Marionette.Application {
 		const excludeWidgets = {};
 
 		jQuery.each( this.widgetsCache, ( widgetName, widgetConfig ) => {
-			if ( widgetConfig.controls ) {
+			// A widget with `lazy: true` was sent metadata-only by the
+			// e_lazy_widget_schemas experiment — let the AJAX fetch its controls.
+			if ( widgetConfig.controls && ! widgetConfig.lazy ) {
 				excludeWidgets[ widgetName ] = true;
 			}
 		} );
@@ -1465,6 +1474,12 @@ export default class EditorBase extends Marionette.Application {
 			}
 
 			this.widgetsCache[ widgetName ] = jQuery.extend( true, {}, this.widgetsCache[ widgetName ], widgetConfig );
+
+			// Clear the lazy marker once the real controls payload has arrived
+			// (e_lazy_widget_schemas experiment).
+			if ( this.widgetsCache[ widgetName ].lazy && widgetConfig.controls && Object.keys( widgetConfig.controls ).length > 0 ) {
+				delete this.widgetsCache[ widgetName ].lazy;
+			}
 		} );
 	}
 
