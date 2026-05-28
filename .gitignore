@@ -62,3 +62,5 @@ tests/playwright/blob-report
 playwright-test-results
 **/.env
 docker-output/
+
+reports/
