@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Elementor (Perf Phase 9 — Emberly Build)
- * Description: PERF BUILD — Elementor 4.2.0 with Phases 1-9 performance optimizations. Includes wp-polyfill skip + memoized active controls + view index + shared element configs. Enable in Settings → Experiments.
+ * Plugin Name: Elementor (Perf Phase 10 — Emberly Build)
+ * Description: PERF BUILD — Elementor 4.2.0 with Phases 1-10 performance optimizations. Adds fast settings clone (~5.75x faster than structuredClone) on top of Phase 9. Enable all three experiments in Settings → Experiments.
  * Plugin URI: https://elementor.com/?utm_source=wp-plugins&utm_campaign=plugin-uri&utm_medium=wp-dash
- * Version: 4.2.0-perf9
+ * Version: 4.2.0-perf10
  * Author: Elementor.com (Emberly perf fork)
  * Author URI: https://elementor.com/?utm_source=wp-plugins&utm_campaign=author-uri&utm_medium=wp-dash
  * Requires PHP: 7.4
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-define( 'ELEMENTOR_VERSION', '4.2.0-perf9' );
+define( 'ELEMENTOR_VERSION', '4.2.0-perf10' );
 
 define( 'ELEMENTOR__FILE__', __FILE__ );
 define( 'ELEMENTOR_PLUGIN_BASE', plugin_basename( ELEMENTOR__FILE__ ) );
