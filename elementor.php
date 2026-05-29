@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: Elementor (Perf Phase 10 — Emberly Build)
+ * Plugin Name: Elementor ( EM Perf )
  * Description: PERF BUILD — Elementor 4.2.0 with Phases 1-10 performance optimizations. Adds fast settings clone (~5.75x faster than structuredClone) on top of Phase 9. Enable all three experiments in Settings → Experiments.
  * Plugin URI: https://elementor.com/?utm_source=wp-plugins&utm_campaign=plugin-uri&utm_medium=wp-dash
  * Version: 4.2.0-perf10
- * Author: Elementor.com (Emberly perf fork)
+ * Author: Elementor.com - EM
  * Author URI: https://elementor.com/?utm_source=wp-plugins&utm_campaign=author-uri&utm_medium=wp-dash
  * Requires PHP: 7.4
  * Requires at least: 6.6
