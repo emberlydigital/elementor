@@ -356,7 +356,7 @@ export default class EditorBase extends Marionette.Application {
 			const cacheKey = isInnerSection ? '__sharedConfigInnerSection' : '__sharedConfig';
 			if ( ! this.config.elements[ elType ][ cacheKey ] ) {
 				const shared = elementorCommon?.config?.experimentalFeatures?.e_fast_settings_clone
-					? elementorCommon.helpers.cloneObject( this.config.elements[ elType ] )
+					? JSON.parse( JSON.stringify( this.config.elements[ elType ] ) )
 					: structuredClone( this.config.elements[ elType ] );
 				if ( isInnerSection ) {
 					shared.title = __( 'Inner Section', 'elementor' );
@@ -369,7 +369,7 @@ export default class EditorBase extends Marionette.Application {
 		}
 
 		const elementConfig = elementorCommon?.config?.experimentalFeatures?.e_fast_settings_clone
-			? elementorCommon.helpers.cloneObject( this.config.elements[ elType ] )
+			? JSON.parse( JSON.stringify( this.config.elements[ elType ] ) )
 			: structuredClone( this.config.elements[ elType ] );
 
 		if ( isInnerSection ) {
