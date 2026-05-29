@@ -1,5 +1,36 @@
 import Conditions from './conditions';
 
+// Module-scoped cache for parsed condition names. The regex work in
+// convertConditionToConditions depends only on the string conditionName, which
+// recurs many times across element/widget instances (e.g. "selected_icon[value]!"
+// appears once per heading-with-icon widget). Cap entry count defensively in case
+// of pathological dynamic input — in practice this holds <500 entries.
+const parsedConditionNameCache = new Map();
+
+function parseConditionName( conditionName ) {
+	let parsed = parsedConditionNameCache.get( conditionName );
+	if ( parsed ) {
+		return parsed;
+	}
+
+	const conditionNameParts = conditionName.match( /([\w-]+(?:\[[\w-]+])?)?(!?)$/i );
+	const conditionRealName = conditionNameParts[ 1 ];
+	const parsedControlName = conditionRealName.match( /([\w-]+)(?:\[([\w-]+)])?/ );
+
+	parsed = {
+		conditionRealName,
+		isNegativeCondition: !! conditionNameParts[ 2 ],
+		conditionNameWithoutSubKey: parsedControlName[ 1 ],
+		conditionSubKey: parsedControlName[ 2 ],
+	};
+
+	if ( parsedConditionNameCache.size < 2000 ) {
+		parsedConditionNameCache.set( conditionName, parsed );
+	}
+
+	return parsed;
+}
+
 /**
  * Control Conditions Class
  *
@@ -32,18 +63,12 @@ export default class ControlConditions extends Conditions {
 	convertConditionToConditions( conditionName, conditionValue, controlModel, values, controls ) {
 		// The first step is to isolate the term from the negative operator if exists. For example, a condition format
 		// can look like 'selected_icon[value]!', so we examine this term with a negative connotation.
-		const conditionNameParts = conditionName.match( /([\w-]+(?:\[[\w-]+])?)?(!?)$/i ),
-			conditionRealName = conditionNameParts[ 1 ],
-			isNegativeCondition = !! conditionNameParts[ 2 ];
+		// The regex parsing depends only on conditionName, so the result is memoized across calls.
+		const { conditionRealName, isNegativeCondition, conditionNameWithoutSubKey, conditionSubKey } = parseConditionName( conditionName );
 
-		const parsedControlName = conditionRealName.match( /([\w-]+)(?:\[([\w-]+)])?/ ),
-			// ConditionNameWithoutSubKey example: the condition key 'image[url]' will give the value of 'image'.
-			conditionNameWithoutSubKey = parsedControlName[ 1 ],
-			// ConditionSubKey example: the condition key 'image[url]' will give the value of 'url'.
-			conditionSubKey = parsedControlName[ 2 ],
-			// In some cases the control's attributes will be under the 'attributes' property, and in some
-			// cases they will be directly on the model object.
-			controlResponsiveProp = controlModel.attributes?.responsive || controlModel.responsive;
+		// In some cases the control's attributes will be under the 'attributes' property, and in some
+		// cases they will be directly on the model object.
+		const controlResponsiveProp = controlModel.attributes?.responsive || controlModel.responsive;
 
 		let conditionNameToCheck = conditionRealName,
 			controlValue;
