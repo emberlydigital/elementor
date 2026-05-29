@@ -388,6 +388,15 @@ class Manager extends Base_Object {
 			'release_status' => self::RELEASE_STATUS_BETA,
 			'default' => self::STATE_INACTIVE,
 		] );
+
+		$this->add_feature( [
+			'name' => 'e_skip_polyfill',
+			'title' => esc_html__( 'Skip Polyfill in Editor', 'elementor' ),
+			'tag' => esc_html__( 'Performance', 'elementor' ),
+			'description' => esc_html__( 'Replace the wp-polyfill bundle with an empty stub on the Elementor editor page. Saves ~1.5-3s of script parse/evaluate time on modern browsers (Chrome/Edge 80+, Firefox 78+, Safari 13+). Disable if you need to support legacy browsers without ES2019/2020/2021 features.', 'elementor' ),
+			'release_status' => self::RELEASE_STATUS_BETA,
+			'default' => self::STATE_INACTIVE,
+		] );
 	}
 
 	/**

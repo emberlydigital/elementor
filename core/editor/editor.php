@@ -148,6 +148,19 @@ class Editor {
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ], 999999 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_styles' ], 999999 );
 
+		// Replace wp-polyfill with an empty stub when the experiment is on. The polyfill
+		// bundle costs ~1.5-3s of parse/evaluate time on modern browsers (Chrome/Edge 80+,
+		// Firefox 78+, Safari 13+) for features that are all native there. wp-i18n declares
+		// it as a transitive dep so it always loads on the editor page.
+		if ( Plugin::$instance->experiments->is_feature_active( 'e_skip_polyfill' ) ) {
+			add_filter( 'script_loader_src', function ( $src, $handle ) {
+				if ( 'wp-polyfill' !== $handle ) {
+					return $src;
+				}
+				return ELEMENTOR_ASSETS_URL . 'lib/polyfill/empty.js?ver=' . ELEMENTOR_VERSION;
+			}, 10, 2 );
+		}
+
 		// Setup default heartbeat options
 		add_filter( 'heartbeat_settings', function( $settings ) {
 			$settings['interval'] = 15;
