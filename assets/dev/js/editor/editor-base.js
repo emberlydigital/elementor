@@ -347,9 +347,28 @@ export default class EditorBase extends Marionette.Application {
 			return false;
 		}
 
+		const isInnerSection = 'section' === elType && model.get( 'isInner' );
+
+		// Share the base elType config across all instances of the same elType (gated by
+		// e_memoize_active_controls). The inner-section title is the only per-instance
+		// mutation and is applied to a shallow copy in that branch.
+		if ( elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls ) {
+			const cacheKey = isInnerSection ? '__sharedConfigInnerSection' : '__sharedConfig';
+			if ( ! this.config.elements[ elType ][ cacheKey ] ) {
+				const shared = structuredClone( this.config.elements[ elType ] );
+				if ( isInnerSection ) {
+					shared.title = __( 'Inner Section', 'elementor' );
+				}
+				Object.defineProperty( this.config.elements[ elType ], cacheKey, {
+					value: shared, enumerable: false, configurable: true,
+				} );
+			}
+			return this.config.elements[ elType ][ cacheKey ];
+		}
+
 		const elementConfig = structuredClone( this.config.elements[ elType ] );
 
-		if ( 'section' === elType && model.get( 'isInner' ) ) {
+		if ( isInnerSection ) {
 			elementConfig.title = __( 'Inner Section', 'elementor' );
 		}
 
@@ -363,8 +382,20 @@ export default class EditorBase extends Marionette.Application {
 			return false;
 		}
 
-		const isInner = modelElement.get( 'isInner' ),
-			controls = {};
+		const isInner = modelElement.get( 'isInner' );
+
+		// Share the merged-controls map across every instance of the same widget type
+		// (gated by e_memoize_active_controls). Without this, every element pays for a
+		// full jQuery.extend(true, {}, ...) per control on every instance — the bulk of
+		// cloneObject self-time and the GC pressure flagged in the perf report.
+		const sharedSchemas = elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls;
+		const cacheKey = isInner ? '__mergedControlsInner' : '__mergedControlsTop';
+
+		if ( sharedSchemas && elementData[ cacheKey ] ) {
+			return elementData[ cacheKey ];
+		}
+
+		const controls = {};
 
 		_.each( elementData.controls, ( controlData, controlKey ) => {
 			if ( ( isInner && controlData.hide_in_inner ) || ( ! isInner && controlData.hide_in_top ) ) {
@@ -374,10 +405,24 @@ export default class EditorBase extends Marionette.Application {
 			controls[ controlKey ] = controlData;
 		} );
 
+		if ( sharedSchemas ) {
+			// Eagerly perform the per-control deep-merge once and cache it. Subsequent
+			// instances of the same widget type return this same map by reference.
+			_.each( controls, ( controlData, controlKey ) => {
+				controls[ controlKey ] = jQuery.extend( true, {}, this.config.controls[ controlData.type ], controlData );
+			} );
+			Object.defineProperty( controls, '__merged', { value: true, enumerable: false, configurable: true } );
+			elementData[ cacheKey ] = controls;
+		}
+
 		return controls;
 	}
 
 	mergeControlsSettings( controls ) {
+		if ( controls && controls.__merged ) {
+			return controls;
+		}
+
 		_.each( controls, ( controlData, controlKey ) => {
 			controls[ controlKey ] = jQuery.extend( true, {}, this.config.controls[ controlData.type ], controlData );
 		} );
@@ -1465,6 +1510,12 @@ export default class EditorBase extends Marionette.Application {
 			}
 
 			this.widgetsCache[ widgetName ] = jQuery.extend( true, {}, this.widgetsCache[ widgetName ], widgetConfig );
+
+			// Invalidate the per-widget-type shared merged-controls cache (see
+			// getElementControls). Any existing instances retain their controls reference;
+			// new instances will rebuild from the updated schema.
+			delete this.widgetsCache[ widgetName ].__mergedControlsTop;
+			delete this.widgetsCache[ widgetName ].__mergedControlsInner;
 		} );
 	}
 

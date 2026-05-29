@@ -74,6 +74,15 @@ BaseSettingsModel = Backbone.Model.extend( {
 		self.handleRepeaterData( attrs );
 
 		self.set( attrs );
+
+		if ( elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls ) {
+			self.__activeControlsCacheVersion = 0;
+			self.__activeControlsCache = null;
+			self.on( 'change', () => {
+				self.__activeControlsCacheVersion++;
+				self.__activeControlsCache = null;
+			} );
+		}
 	},
 
 	convertRepeaterValueToCollection( attrs, repeaterControl ) {
@@ -127,7 +136,15 @@ BaseSettingsModel = Backbone.Model.extend( {
 	getStyleControls( controls, attributes ) {
 		var self = this;
 
-		controls = structuredClone( self.getActiveControls( controls, attributes ) );
+		// The inner loop replaces each control with `jQuery.extend( {}, defaults, control )`
+		// before mutating it (control.styleFields = ...), so the input map is read-only here.
+		// Cloning it deeply is wasted work — especially when getActiveControls is memoized
+		// and returns the same cached map across calls.
+		if ( elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls ) {
+			controls = self.getActiveControls( controls, attributes );
+		} else {
+			controls = structuredClone( self.getActiveControls( controls, attributes ) );
+		}
 
 		var styleControls = [];
 
@@ -210,6 +227,14 @@ BaseSettingsModel = Backbone.Model.extend( {
 	},
 
 	getActiveControls( controls, attributes ) {
+		const useCache = elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls &&
+			undefined === controls &&
+			undefined === attributes;
+
+		if ( useCache && this.__activeControlsCache && this.__activeControlsCache.version === this.__activeControlsCacheVersion ) {
+			return this.__activeControlsCache.result;
+		}
+
 		const activeControls = {};
 
 		if ( ! controls ) {
@@ -227,6 +252,13 @@ BaseSettingsModel = Backbone.Model.extend( {
 				activeControls[ controlKey ] = control;
 			}
 		} );
+
+		if ( useCache ) {
+			this.__activeControlsCache = {
+				version: this.__activeControlsCacheVersion,
+				result: activeControls,
+			};
+		}
 
 		return activeControls;
 	},
@@ -256,6 +288,28 @@ BaseSettingsModel = Backbone.Model.extend( {
 
 	parseDynamicSettings( settings, options, controls ) {
 		var self = this;
+
+		// Fast path: widgets without any __dynamic__ values and without repeater controls
+		// have nothing to parse, so we can skip the full cloneObject pass. All existing
+		// callers (views/base.js:959, controls-css-parser.js:42, repeater-row.js:80) read
+		// the result without mutating it.
+		if ( elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls &&
+			undefined === settings && undefined === options && undefined === controls ) {
+			if ( undefined === self.__hasRepeaterControl ) {
+				self.__hasRepeaterControl = false;
+				jQuery.each( self.controls, function() {
+					if ( this.is_repeater ) {
+						self.__hasRepeaterControl = true;
+						return false;
+					}
+				} );
+			}
+			const dyn = self.attributes.__dynamic__;
+			const hasDynamic = dyn && Object.keys( dyn ).length > 0;
+			if ( ! hasDynamic && ! self.__hasRepeaterControl ) {
+				return self.attributes;
+			}
+		}
 
 		settings = elementorCommon.helpers.cloneObject( settings || self.attributes );
 

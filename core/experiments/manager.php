@@ -379,6 +379,15 @@ class Manager extends Base_Object {
 				'minimum_installation_version' => '3.30.0',
 			],
 		] );
+
+		$this->add_feature( [
+			'name' => 'e_memoize_active_controls',
+			'title' => esc_html__( 'Memoize Active Controls', 'elementor' ),
+			'tag' => esc_html__( 'Performance', 'elementor' ),
+			'description' => esc_html__( 'Cache the result of active control evaluation per element settings model and invalidate on change. Reduces editor bootstrap time on pages with many elements by avoiding repeated condition evaluation.', 'elementor' ),
+			'release_status' => self::RELEASE_STATUS_BETA,
+			'default' => self::STATE_INACTIVE,
+		] );
 	}
 
 	/**
