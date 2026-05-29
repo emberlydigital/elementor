@@ -22,14 +22,14 @@ async function run() {
 	const page = await context.newPage();
 
 	console.log( '[1/3] login' );
-	await page.goto( `${ SITE }/wp-login.php`, { timeout: 60000, waitUntil: 'domcontentloaded' } );
+	await page.goto( `${ SITE }/getwplogin`, { timeout: 60000, waitUntil: 'domcontentloaded' } );
 	await page.fill( '#user_login', WP_USER );
 	await page.fill( '#user_pass', WP_PASS );
 	await Promise.all( [
-		page.waitForURL( /\/wp-admin\//, { timeout: 60000 } ),
+		page.waitForURL( /\/wp-admin\/|\/?\/?dashboard/, { timeout: 60000 } ).catch( () => {} ),
 		page.click( '#wp-submit' ),
 	] );
-	console.log( '  ok' );
+	console.log( '  logged in, url:', page.url() );
 
 	console.log( '[2/3] start CPU profile + navigate to editor' );
 	const cdp = await page.context().newCDPSession( page );
