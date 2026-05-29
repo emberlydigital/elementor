@@ -347,9 +347,28 @@ export default class EditorBase extends Marionette.Application {
 			return false;
 		}
 
+		const isInnerSection = 'section' === elType && model.get( 'isInner' );
+
+		// Share the base elType config across all instances of the same elType (gated by
+		// e_memoize_active_controls). The inner-section title is the only per-instance
+		// mutation and is applied to a shallow copy in that branch.
+		if ( elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls ) {
+			const cacheKey = isInnerSection ? '__sharedConfigInnerSection' : '__sharedConfig';
+			if ( ! this.config.elements[ elType ][ cacheKey ] ) {
+				const shared = structuredClone( this.config.elements[ elType ] );
+				if ( isInnerSection ) {
+					shared.title = __( 'Inner Section', 'elementor' );
+				}
+				Object.defineProperty( this.config.elements[ elType ], cacheKey, {
+					value: shared, enumerable: false, configurable: true,
+				} );
+			}
+			return this.config.elements[ elType ][ cacheKey ];
+		}
+
 		const elementConfig = structuredClone( this.config.elements[ elType ] );
 
-		if ( 'section' === elType && model.get( 'isInner' ) ) {
+		if ( isInnerSection ) {
 			elementConfig.title = __( 'Inner Section', 'elementor' );
 		}
 
