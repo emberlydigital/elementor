@@ -12,7 +12,7 @@ const HEAVY_WIDGETS: string[] = [
 	'alert', 'html', 'shortcode', 'menu-anchor', 'image-carousel',
 ];
 
-const REPEATS_PER_WIDGET = 2;
+const REPEATS_PER_WIDGET = 10;
 const GOTO_TIMEOUT_MS = 120_000;
 const READY_TIMEOUT_MS = 180_000;
 
