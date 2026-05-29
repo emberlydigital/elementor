@@ -283,7 +283,12 @@ BaseElementView = BaseContainer.extend( {
 			.listenTo( this.model, 'request:edit', this.onEditRequest )
 			.listenTo( this.model, 'request:toggleVisibility', this.toggleVisibility );
 
-		this.initControlsCSSParser();
+		// When e_lazy_controls_css_parser is on, defer ControlsCSSParser creation
+		// until the first renderStyles call. Skips a Marionette View + 3 listenTo
+		// bindings per element during the boot recursion.
+		if ( ! elementorCommon?.config?.experimentalFeatures?.e_lazy_controls_css_parser ) {
+			this.initControlsCSSParser();
+		}
 
 		if ( ! this.onDynamicServerRequestEnd ) {
 			this.onDynamicServerRequestEnd = _.debounce( () => {
@@ -541,6 +546,14 @@ BaseElementView = BaseContainer.extend( {
 		} );
 	},
 
+	getControlsCSSParser() {
+		if ( ! this.controlsCSSParser ) {
+			this.initControlsCSSParser();
+		}
+
+		return this.controlsCSSParser;
+	},
+
 	enqueueFonts() {
 		const editModel = this.getEditModel(),
 			settings = editModel.get( 'settings' );
@@ -562,16 +575,18 @@ BaseElementView = BaseContainer.extend( {
 			settings = this.getEditModel().get( 'settings' );
 		}
 
-		this.controlsCSSParser.stylesheet.empty();
+		const cssParser = this.getControlsCSSParser();
 
-		this.controlsCSSParser.addStyleRules(
+		cssParser.stylesheet.empty();
+
+		cssParser.addStyleRules(
 			settings.getStyleControls(),
 			settings.attributes,
 			this.getEditModel().get( 'settings' ).controls,
 			[ /{{ID}}/g, /{{WRAPPER}}/g ],
 			[ this.getID(), '.elementor-' + elementor.config.document.id + ' .elementor-element.' + this.getElementUniqueID() ] );
 
-		this.controlsCSSParser.addStyleToDocument();
+		cssParser.addStyleToDocument();
 	},
 
 	renderCustomClasses() {
@@ -1118,7 +1133,10 @@ BaseElementView = BaseContainer.extend( {
 			delete this.dataBindings;
 		}
 
-		this.controlsCSSParser.removeStyleFromDocument();
+		// Skip if the parser was never created (e_lazy_controls_css_parser + element never rendered styles).
+		if ( this.controlsCSSParser ) {
+			this.controlsCSSParser.removeStyleFromDocument();
+		}
 
 		this.getEditModel().get( 'settings' ).validators = {};
 

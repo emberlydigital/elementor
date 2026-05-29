@@ -406,6 +406,15 @@ class Manager extends Base_Object {
 			'release_status' => self::RELEASE_STATUS_BETA,
 			'default' => self::STATE_INACTIVE,
 		] );
+
+		$this->add_feature( [
+			'name' => 'e_lazy_controls_css_parser',
+			'title' => esc_html__( 'Lazy Controls CSS Parser', 'elementor' ),
+			'tag' => esc_html__( 'Performance', 'elementor' ),
+			'description' => esc_html__( 'Defer construction of each element view\'s ControlsCSSParser until the first time it is needed (renderStyles / destroy). Skips a Marionette View instantiation + 3 listenTo bindings per element during the editor boot recursion. Disable if a third-party plugin reads element.controlsCSSParser directly before render.', 'elementor' ),
+			'release_status' => self::RELEASE_STATUS_BETA,
+			'default' => self::STATE_INACTIVE,
+		] );
 	}
 
 	/**
