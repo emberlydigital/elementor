@@ -1163,15 +1163,16 @@ export default class EditorBase extends Marionette.Application {
 	}
 
 	requestWidgetsConfig() {
-		const excludeWidgets = {};
+		const run = () => {
+			const excludeWidgets = {};
 
-		jQuery.each( this.widgetsCache, ( widgetName, widgetConfig ) => {
-			if ( widgetConfig.controls ) {
-				excludeWidgets[ widgetName ] = true;
-			}
-		} );
+			jQuery.each( this.widgetsCache, ( widgetName, widgetConfig ) => {
+				if ( widgetConfig.controls ) {
+					excludeWidgets[ widgetName ] = true;
+				}
+			} );
 
-		elementorCommon.ajax.addRequest( 'get_widgets_config', {
+			elementorCommon.ajax.addRequest( 'get_widgets_config', {
 			data: {
 				exclude: excludeWidgets,
 			},
@@ -1192,7 +1193,23 @@ export default class EditorBase extends Marionette.Application {
 					} );
 				}
 			},
-		} );
+			} );
+		};
+
+		// Defer the schema-prefetch (request body + ~394 KB JSON response parse + the
+		// per-widget deep-merge in addWidgetsCache) into idle time so it does not race
+		// with the initial canvas render. The data is only needed when the user opens
+		// the widget panel to add a new element; in-page widgets already have their
+		// schemas in the boot config. Falls back to setTimeout where requestIdleCallback
+		// is unavailable (Safari pre-15.4).
+		const useDefer = elementorCommon?.config?.experimentalFeatures?.e_memoize_active_controls;
+		if ( useDefer && 'function' === typeof window.requestIdleCallback ) {
+			window.requestIdleCallback( run, { timeout: 3000 } );
+		} else if ( useDefer ) {
+			setTimeout( run, 0 );
+		} else {
+			run();
+		}
 	}
 
 	async refreshWidgets() {
